@@ -1,19 +1,19 @@
 <?php
-
 /**
+ * @file
  * Backup the files directory of a Backdrop CMS site.
  */
 
-// Check if we already have config array.
 if (!isset($config)) {
- $config = parse_ini_file('config.ini');
+  $config = parse_ini_file('config.ini');
 }
 
 // Get path to files directory.
+$db_name = $config['DB_NAME'];
 $backdrop_root = $config['BACKDROP_ROOT'];
 $destination = $config['BACKUP_DESTINATION'];
 $num_keep = $config['NUM_KEEP'];
-$db_name = $config['DB_NAME'];
+$timezone = $config['TIMEZONE'];
 
 // Check which options were passed in on the command line.
 if (in_array('--rollover_files', $argv) || in_array('-rf', $argv)) {
@@ -22,18 +22,31 @@ if (in_array('--rollover_files', $argv) || in_array('-rf', $argv)) {
 else {
   $rollover_files = FALSE;
 }
+if (in_array('--latest', $argv) || in_array('-l', $argv)) {
+  $latest = TRUE;
+}
+else {
+  $latest = FALSE;
+}
 
 // Get timestamp.
-date_default_timezone_set('EST');
+date_default_timezone_set($timezone);
 $date = date('F-j-Y-Gis');
 
 // Make backup.
 exec(
   "tar czf $db_name-files-$date.tar.gz -C $backdrop_root files/ &&
-  mkdir -p $destination/files_backups;"
+  mkdir -p $destination/files_backups &&
+  mv $db_name-files-$date.tar.gz $destination/files_backups"
 );
-
-//mv files-$date.tar.gz $destination/files_backups"
+if ($latest) {
+  if (file_exists("$destination/files_backups/$db_name-files-latest.tar.gz")) {
+    if (is_link("$destination/files_backups/$db_name-files-latest.tar.gz")) {
+      unlink("$destination/files_backups/$db_name-files-latest.tar.gz");
+    }
+  }
+  symlink("$destination/files_backups/$db_name-files-$date.tar.gz", "$destination/files_backups/$db_name-files-latest.tar.gz");
+}
 
 if ($rollover_files) {
   _rollover_files_backups($destination, $num_keep);
@@ -52,6 +65,7 @@ function _rollover_files_backups($backup_destination, $num_keep = 3) {
   $filemtime_keyed_array = [];
   $bups = scandir($backup_destination . '/files_backups');
   foreach ($bups as $key => $b) {
+    if (is_link($b)) continue;
     if (strpos($b, '.tar.gz') === FALSE) {
       unset($bups[$key]);
     }
