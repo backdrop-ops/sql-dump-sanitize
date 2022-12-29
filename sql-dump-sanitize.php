@@ -84,12 +84,12 @@ $date = date('F-j-Y-Gis');
 // Dump DBs to files.
 exec("mkdir -p $backup_destination");
 $file_name = $sanitize ? "$db_name-$date-sanatized" : "$db_name-$date";
-exec("mysqldump -h $db_host -u$db_user -p$db_password $db_name | gzip > $backup_destination/$file_name.sql.gz");
+exec("mysqldump -R -h $db_host -u$db_user -p$db_password $db_name | gzip > $backup_destination/$file_name.sql.gz");
 
 if ($civi) {
   exec("mkdir -p $backup_destination_civi");
   $file_name_civi = $sanitize ? "$db_name_civi-$date-sanatized" : "$db_name_civi-$date";
-  exec("mysqldump -h $db_host -u$db_user_civi -p$db_password_civi $db_name_civi | gzip > $backup_destination_civi/$file_name_civi.sql.gz");
+  exec("mysqldump -R -h $db_host -u$db_user_civi -p$db_password_civi $db_name_civi | gzip > $backup_destination_civi/$file_name_civi.sql.gz");
 }
 
 // Give db dump files nice names that include the date and create symlinks for
@@ -180,7 +180,7 @@ function _sanitize_backdrop($db_user, $db_password, $db_host, $db_name, $db_temp
   exec("echo \"create database $db_temp\" | mysql -u $db_user -p$db_password");
 
   // Dump DB and pipe into $db_temp.
-  exec("mysqldump -h $db_host -u $db_user -p$db_password $db_name | mysql -h $db_host -u $db_user -p$db_password $db_temp");
+  exec("mysqldump -R -h $db_host -u $db_user -p$db_password $db_name | mysql -h $db_host -u $db_user -p$db_password $db_temp");
 
   // Clear the cache% tables.
   _truncate_cache_tables($db_user, $db_password, $db_host, $db_name, $db_temp);
@@ -242,7 +242,7 @@ function _sanitize_civicrm($db_user, $db_password, $db_host, $db_name, $db_temp)
   exec("echo \"create database $db_temp\" | mysql -u $db_user -p$db_password");
 
   // Dump DB and pipe into $db_temp.
-  exec("mysqldump -h $db_host -u $db_user -p$db_password $db_name | mysql -h $db_host -u $db_user -p$db_password $db_temp");
+  exec("mysqldump -R -h $db_host -u $db_user -p$db_password $db_name | mysql -h $db_host -u $db_user -p$db_password $db_temp");
 
   // Clear the civicrm_%cache tables.
   _truncate_cache_tables_civi($db_user, $db_password, $db_host, $db_name, $db_temp);
